@@ -27,30 +27,30 @@ ONBOARDING_URL="https://clostech.ai/onboarding/magento"
 # Funciones
 #-------------------------------------------------------------------------------
 print_header() {
-    echo -e "${BLUE}"
-    echo "╔═══════════════════════════════════════════════════════════════╗"
-    echo "║                                                               ║"
-    echo "║              CLOSTECH - Instalador de Módulo                  ║"
-    echo "║                      para Magento 2                           ║"
-    echo "║                                                               ║"
-    echo "╚═══════════════════════════════════════════════════════════════╝"
-    echo -e "${NC}"
+    echo -e "${BLUE}" >&2
+    echo "╔═══════════════════════════════════════════════════════════════╗" >&2
+    echo "║                                                               ║" >&2
+    echo "║              CLOSTECH - Instalador de Módulo                  ║" >&2
+    echo "║                      para Magento 2                           ║" >&2
+    echo "║                                                               ║" >&2
+    echo "╚═══════════════════════════════════════════════════════════════╝" >&2
+    echo -e "${NC}" >&2
 }
 
 print_success() {
-    echo -e "${GREEN}✔ $1${NC}"
+    echo -e "${GREEN}✔ $1${NC}" >&2
 }
 
 print_error() {
-    echo -e "${RED}✖ $1${NC}"
+    echo -e "${RED}✖ $1${NC}" >&2
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠ $1${NC}"
+    echo -e "${YELLOW}⚠ $1${NC}" >&2
 }
 
 print_info() {
-    echo -e "${BLUE}➜ $1${NC}"
+    echo -e "${BLUE}➜ $1${NC}" >&2
 }
 
 check_magento() {
@@ -142,18 +142,18 @@ cleanup() {
 }
 
 print_footer() {
-    echo ""
-    echo -e "${GREEN}"
-    echo "╔═══════════════════════════════════════════════════════════════╗"
-    echo "║                                                               ║"
-    echo "║           ¡Módulo instalado correctamente!                    ║"
-    echo "║                                                               ║"
-    echo "╚═══════════════════════════════════════════════════════════════╝"
-    echo -e "${NC}"
-    echo ""
+    echo "" >&2
+    echo -e "${GREEN}" >&2
+    echo "╔═══════════════════════════════════════════════════════════════╗" >&2
+    echo "║                                                               ║" >&2
+    echo "║           ¡Módulo instalado correctamente!                    ║" >&2
+    echo "║                                                               ║" >&2
+    echo "╚═══════════════════════════════════════════════════════════════╝" >&2
+    echo -e "${NC}" >&2
+    echo "" >&2
     print_info "Próximo paso: Completá el onboarding en:"
-    echo -e "    ${BLUE}$ONBOARDING_URL${NC}"
-    echo ""
+    echo -e "    ${BLUE}$ONBOARDING_URL${NC}" >&2
+    echo "" >&2
 }
 
 #-------------------------------------------------------------------------------
