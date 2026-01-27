@@ -20,7 +20,7 @@ NC='\033[0m' # Sin color
 # Configuración
 #-------------------------------------------------------------------------------
 MODULE_URL="https://clostech.ai/downloads/magento-module.zip"
-MODULE_PATH="app/code/Clostech/Integration"
+MODULE_PATH="src/app/code/Clostech/Integration"
 ONBOARDING_URL="https://clostech.ai/onboarding/magento"
 
 #-------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ check_magento() {
 check_permissions() {
     print_info "Verificando permisos..."
     
-    if [ ! -w "app/code" ]; then
+    if [ ! -w "src/app/code" ]; then
         print_error "No tenés permisos de escritura en app/code"
         print_warning "Ejecutá el script con sudo o verificá los permisos."
         exit 1
@@ -104,11 +104,11 @@ install_module() {
     print_info "Instalando módulo..."
     
     # Crear directorio si no existe
-    mkdir -p "app/code/Clostech"
+    mkdir -p "src/app/code/Clostech"
     
     # Descomprimir
     if command -v unzip &> /dev/null; then
-        unzip -q "$ZIP_FILE" -d "app/code/Clostech/"
+        unzip -q "$ZIP_FILE" -d "src/app/code/Clostech/"
     else
         print_error "Se necesita unzip para instalar el módulo."
         exit 1
