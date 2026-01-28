@@ -27,82 +27,76 @@ ONBOARDING_URL="https://clostech.ai/onboarding/magento"
 # Funciones
 #-------------------------------------------------------------------------------
 print_header() {
-    echo -e "${BLUE}" >&2
-    echo "╔═══════════════════════════════════════════════════════════════╗" >&2
-    echo "║                                                               ║" >&2
-    echo "║              CLOSTECH - Instalador de Módulo                  ║" >&2
-    echo "║                      para Magento 2                           ║" >&2
-    echo "║                                                               ║" >&2
-    echo "╚═══════════════════════════════════════════════════════════════╝" >&2
-    echo -e "${NC}" >&2
+    echo -e "${BLUE}Clostech Magento Module Installer v1.0${NC}" >&2
+    echo "" >&2
 }
 
 print_success() {
-    echo -e "${GREEN}✔ $1${NC}" >&2
+    echo -e "${GREEN}[OK]${NC} $1" >&2
 }
 
 print_error() {
-    echo -e "${RED}✖ $1${NC}" >&2
+    echo -e "${RED}[ERROR]${NC} $1" >&2
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠ $1${NC}" >&2
+    echo -e "${YELLOW}[WARNING]${NC} $1" >&2
 }
 
 print_info() {
-    echo -e "${BLUE}➜ $1${NC}" >&2
+    echo -e "${BLUE}[INFO]${NC} $1" >&2
 }
 
 check_magento() {
-    print_info "Verificando instalación de Magento..."
+    print_info "Checking Magento installation..."
     
     if [ ! -f "bin/magento" ]; then
-        print_error "No se encontró Magento en el directorio actual."
-        print_warning "Ejecutá este script desde la raíz de tu instalación de Magento."
-        print_warning "Ejemplo: cd /var/www/html/magento && curl -s $MODULE_URL | bash"
+        print_error "Magento not found in current directory"
+        print_warning "Run this script from your Magento root directory"
+        print_warning "Example: cd /var/www/html/magento && curl -s https://clostech.ai/install.sh | bash"
         exit 1
     fi
     
-    print_success "Magento encontrado"
+    print_success "Magento found"
 }
 
 check_permissions() {
-    print_info "Verificando permisos..."
+    print_info "Checking permissions..."
     
     if [ ! -w "src/app/code" ]; then
-        print_error "No tenés permisos de escritura en app/code"
-        print_warning "Ejecutá el script con sudo o verificá los permisos."
+        print_error "No write permissions on src/app/code"
+        print_warning "Run with sudo or check permissions"
         exit 1
     fi
     
-    print_success "Permisos correctos"
+    print_success "Permissions verified"
 }
 
 check_existing_installation() {
-    print_info "Verificando instalación existente..."
+    print_info "Checking for existing installation..."
     
     if [ -d "$MODULE_PATH" ]; then
-        print_warning "El módulo ya está instalado en $MODULE_PATH"
-        echo -n "¿Deseas reinstalar? Esto sobrescribirá los archivos existentes. (s/n): "
+        print_warning "Module already installed at $MODULE_PATH"
+        echo -n "Reinstall? This will overwrite existing files. (y/n): "
         read -r choice
         
-        if [ "$choice" != "s" ] && [ "$choice" != "S" ]; then
-            print_info "Instalación cancelada."
+        if [ "$choice" != "y" ] && [ "$choice" != "Y" ]; then
+            print_info "Installation cancelled"
             exit 0
         fi
         
-        print_info "Continuando con reinstalación..."
+        print_info "Proceeding with reinstallation..."
     else
-        print_success "No hay instalación previa"
+        print_success "No previous installation found"
     fi
 }
 
 create_backup() {
     if [ -d "$MODULE_PATH" ]; then
-        print_info "Creando backup del módulo existente..."
+        print_info "Creating backup..."
         BACKUP_PATH="/tmp/clostech-backup-$(date +%Y%m%d-%H%M%S)"
         cp -r "$MODULE_PATH" "$BACKUP_PATH"
-        print_success "Backup creado en $BACKUP_PATH"
+        print_success "Backup created at $BACKUP_PATH"
         echo "$BACKUP_PATH"
     else
         echo ""
@@ -113,16 +107,16 @@ restore_backup() {
     local BACKUP_PATH=$1
     
     if [ -n "$BACKUP_PATH" ] && [ -d "$BACKUP_PATH" ]; then
-        print_warning "Error detectado. Restaurando backup..."
+        print_warning "Restoring backup..."
         rm -rf "$MODULE_PATH"
         cp -r "$BACKUP_PATH" "$MODULE_PATH"
-        print_success "Backup restaurado"
+        print_success "Backup restored"
         rm -rf "$BACKUP_PATH"
     fi
 }
 
 download_module() {
-    print_info "Copiando módulo desde archivo local..."
+    print_info "Downloading module..."
     
     # Crear directorio temporal
     TMP_DIR=$(mktemp -d)
@@ -132,19 +126,18 @@ download_module() {
     if [ -f "/tmp/clostech-module.zip" ]; then
         cp /tmp/clostech-module.zip "$TMP_FILE"
     else
-        print_error "No se encontró el archivo /tmp/clostech-module.zip"
-        print_warning "Asegúrate de crear el ZIP primero."
+        print_error "File not found: /tmp/clostech-module.zip"
         exit 1
     fi
     
-    print_success "Módulo copiado desde /tmp/clostech-module.zip"
+    print_success "Module downloaded"
     echo "$TMP_FILE"
 }
 
 install_module() {
     local ZIP_FILE=$1
     
-    print_info "Instalando módulo..."
+    print_info "Installing module..."
     
     # Crear directorio si no existe
     mkdir -p "src/app/code/Clostech"
@@ -153,59 +146,53 @@ install_module() {
     if command -v unzip &> /dev/null; then
         unzip -q "$ZIP_FILE" -d "src/app/code/Clostech/"
     else
-        print_error "Se necesita unzip para instalar el módulo."
+        print_error "unzip command not found"
         exit 1
     fi
     
     # Verificar que se instaló
     if [ ! -d "$MODULE_PATH" ]; then
-        print_error "Error al instalar el módulo."
+        print_error "Module installation failed"
         exit 1
     fi
     
-    print_success "Módulo instalado en $MODULE_PATH"
+    print_success "Module installed at $MODULE_PATH"
 }
 
 run_magento_commands() {
-    print_info "Ejecutando comandos de Magento..."
+    print_info "Running Magento commands..."
     
-    print_info "  → setup:upgrade"
+    print_info "Running setup:upgrade..."
     bin/magento setup:upgrade --quiet
     
-    print_info "  → cache:flush"
+    print_info "Flushing cache..."
     bin/magento cache:flush --quiet
     
     # Verificar que el módulo se habilitó
-    print_info "Verificando que el módulo se habilitó..."
+    print_info "Verifying module status..."
     if bin/magento module:status | grep -q "Clostech_Integration"; then
-        print_success "Módulo habilitado correctamente"
+        print_success "Module enabled successfully"
     else
-        print_error "El módulo no se habilitó correctamente"
-        print_warning "Revisa los logs en var/log/ para más detalles"
+        print_error "Module not enabled"
+        print_warning "Check var/log/ for details"
         exit 1
     fi
     
-    print_success "Comandos ejecutados correctamente"
+    print_success "Magento commands completed"
 }
 
 cleanup() {
-    print_info "Limpiando archivos temporales..."
+    print_info "Cleaning up temporary files..."
     rm -rf "$TMP_DIR"
-    print_success "Limpieza completada"
+    print_success "Cleanup completed"
 }
 
 print_footer() {
     echo "" >&2
-    echo -e "${GREEN}" >&2
-    echo "╔═══════════════════════════════════════════════════════════════╗" >&2
-    echo "║                                                               ║" >&2
-    echo "║           ¡Módulo instalado correctamente!                    ║" >&2
-    echo "║                                                               ║" >&2
-    echo "╚═══════════════════════════════════════════════════════════════╝" >&2
-    echo -e "${NC}" >&2
+    print_success "Installation completed successfully" >&2
     echo "" >&2
-    print_info "Próximo paso: Completá el onboarding en:"
-    echo -e "    ${BLUE}$ONBOARDING_URL${NC}" >&2
+    print_info "Next step: Complete onboarding at:" >&2
+    echo -e "  ${BLUE}${ONBOARDING_URL}${NC}" >&2
     echo "" >&2
 }
 
