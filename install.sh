@@ -127,10 +127,10 @@ run_magento_commands() {
     print_info "Ejecutando comandos de Magento..."
     
     print_info "  → setup:upgrade"
-    php bin/magento setup:upgrade --quiet
+    bin/magento setup:upgrade --quiet
     
     print_info "  → cache:flush"
-    php bin/magento cache:flush --quiet
+    bin/magento cache:flush --quiet
     
     print_success "Comandos ejecutados correctamente"
 }
