@@ -78,6 +78,49 @@ check_permissions() {
     print_success "Permisos correctos"
 }
 
+check_existing_installation() {
+    print_info "Verificando instalación existente..."
+    
+    if [ -d "$MODULE_PATH" ]; then
+        print_warning "El módulo ya está instalado en $MODULE_PATH"
+        echo -n "¿Deseas reinstalar? Esto sobrescribirá los archivos existentes. (s/n): "
+        read -r choice
+        
+        if [ "$choice" != "s" ] && [ "$choice" != "S" ]; then
+            print_info "Instalación cancelada."
+            exit 0
+        fi
+        
+        print_info "Continuando con reinstalación..."
+    else
+        print_success "No hay instalación previa"
+    fi
+}
+
+create_backup() {
+    if [ -d "$MODULE_PATH" ]; then
+        print_info "Creando backup del módulo existente..."
+        BACKUP_PATH="/tmp/clostech-backup-$(date +%Y%m%d-%H%M%S)"
+        cp -r "$MODULE_PATH" "$BACKUP_PATH"
+        print_success "Backup creado en $BACKUP_PATH"
+        echo "$BACKUP_PATH"
+    else
+        echo ""
+    fi
+}
+
+restore_backup() {
+    local BACKUP_PATH=$1
+    
+    if [ -n "$BACKUP_PATH" ] && [ -d "$BACKUP_PATH" ]; then
+        print_warning "Error detectado. Restaurando backup..."
+        rm -rf "$MODULE_PATH"
+        cp -r "$BACKUP_PATH" "$MODULE_PATH"
+        print_success "Backup restaurado"
+        rm -rf "$BACKUP_PATH"
+    fi
+}
+
 download_module() {
     print_info "Copiando módulo desde archivo local..."
     
@@ -132,6 +175,16 @@ run_magento_commands() {
     print_info "  → cache:flush"
     bin/magento cache:flush --quiet
     
+    # Verificar que el módulo se habilitó
+    print_info "Verificando que el módulo se habilitó..."
+    if bin/magento module:status | grep -q "Clostech_Integration"; then
+        print_success "Módulo habilitado correctamente"
+    else
+        print_error "El módulo no se habilitó correctamente"
+        print_warning "Revisa los logs en var/log/ para más detalles"
+        exit 1
+    fi
+    
     print_success "Comandos ejecutados correctamente"
 }
 
@@ -164,12 +217,33 @@ main() {
     
     check_magento
     check_permissions
+    check_existing_installation
     
-    ZIP_FILE=$(download_module)
-    install_module "$ZIP_FILE"
-    run_magento_commands
+    # Crear backup antes de instalar
+    BACKUP_PATH=$(create_backup)
+    
+    # Intentar instalación
+    if ! ZIP_FILE=$(download_module); then
+        restore_backup "$BACKUP_PATH"
+        exit 1
+    fi
+    
+    if ! install_module "$ZIP_FILE"; then
+        restore_backup "$BACKUP_PATH"
+        cleanup
+        exit 1
+    fi
+    
+    if ! run_magento_commands; then
+        restore_backup "$BACKUP_PATH"
+        cleanup
+        exit 1
+    fi
+    
+    # Si todo salió bien, eliminar backup
+    [ -n "$BACKUP_PATH" ] && rm -rf "$BACKUP_PATH"
+    
     cleanup
-    
     print_footer
 }
 
