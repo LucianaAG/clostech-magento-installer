@@ -20,7 +20,6 @@ NC='\033[0m' # Sin color
 # Configuración
 #-------------------------------------------------------------------------------
 MODULE_URL="https://raw.githubusercontent.com/LucianaAG/clostech-magento-installer/master/clostech-module.zip"
-ONBOARDING_URL="https://clostech.ai/onboarding/magento"
 
 #-------------------------------------------------------------------------------
 # Funciones
@@ -63,6 +62,30 @@ detect_magento_structure() {
     fi
     
     MODULE_PATH="$APP_PATH/Clostech/Integration"
+}
+
+detect_web_user() {
+    print_info "Detecting web server user..."
+    
+    # Intentar detectar el usuario del servidor web
+    if id "www-data" &>/dev/null; then
+        WEB_USER="www-data"
+        WEB_GROUP="www-data"
+    elif id "apache" &>/dev/null; then
+        WEB_USER="apache"
+        WEB_GROUP="apache"
+    elif id "nginx" &>/dev/null; then
+        WEB_USER="nginx"
+        WEB_GROUP="nginx"
+    else
+        WEB_USER=""
+        WEB_GROUP=""
+        print_warning "Could not detect web server user (www-data/apache/nginx)"
+    fi
+    
+    if [ -n "$WEB_USER" ]; then
+        print_success "Detected web server user: $WEB_USER"
+    fi
 }
 
 check_magento() {
@@ -182,6 +205,29 @@ install_module() {
     print_success "Module installed at $MODULE_PATH"
 }
 
+fix_permissions() {
+    print_info "Fixing file permissions..."
+    
+    if [ -n "$WEB_USER" ] && [ -n "$WEB_GROUP" ]; then
+        # Intentar cambiar dueño con sudo si está disponible
+        if command -v sudo &>/dev/null && sudo -n true 2>/dev/null; then
+            sudo chown -R "$WEB_USER:$WEB_GROUP" "$MODULE_PATH" 2>/dev/null || true
+            sudo chmod -R 755 "$MODULE_PATH" 2>/dev/null || true
+            print_success "Permissions fixed for web server user: $WEB_USER"
+        else
+            # Sin sudo, intentar sin él
+            chown -R "$WEB_USER:$WEB_GROUP" "$MODULE_PATH" 2>/dev/null || {
+                print_warning "Could not change file ownership. If you encounter permission errors, run:"
+                print_warning "  sudo chown -R $WEB_USER:$WEB_GROUP $MODULE_PATH"
+                print_warning "  sudo chmod -R 755 $MODULE_PATH"
+            }
+        fi
+    else
+        chmod -R 755 "$MODULE_PATH" 2>/dev/null || true
+        print_warning "Web server user not detected. If you encounter errors, fix permissions manually"
+    fi
+}
+
 run_magento_commands() {
     print_info "Running Magento commands..."
     
@@ -214,9 +260,6 @@ print_footer() {
     echo "" >&2
     print_success "Installation completed successfully" >&2
     echo "" >&2
-    print_info "Next step: Complete onboarding at:" >&2
-    echo -e "  ${BLUE}${ONBOARDING_URL}${NC}" >&2
-    echo "" >&2
 }
 
 #-------------------------------------------------------------------------------
@@ -227,6 +270,7 @@ main() {
     
     check_magento
     detect_magento_structure
+    detect_web_user
     check_permissions
     check_existing_installation
     
@@ -244,6 +288,9 @@ main() {
         cleanup
         exit 1
     fi
+    
+    # Ajustar permisos
+    fix_permissions
     
     if ! run_magento_commands; then
         restore_backup "$BACKUP_PATH"
