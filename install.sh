@@ -165,12 +165,9 @@ install_module() {
     
     print_info "Installing module..."
     
-    # Crear directorio si no existe
-    mkdir -p "$APP_PATH/Clostech"
-    
-    # Descomprimir
+    # Descomprimir directamente en app/code (el ZIP ya contiene Clostech/)
     if command -v unzip &> /dev/null; then
-        unzip -q "$ZIP_FILE" -d "$APP_PATH/Clostech/"
+        unzip -q "$ZIP_FILE" -d "$APP_PATH/"
     else
         print_error "unzip command not found"
         exit 1
