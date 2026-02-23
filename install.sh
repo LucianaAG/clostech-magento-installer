@@ -19,8 +19,7 @@ NC='\033[0m' # Sin color
 #-------------------------------------------------------------------------------
 # Configuración
 #-------------------------------------------------------------------------------
-MODULE_URL="https://clostech.ai/downloads/magento-module.zip"
-MODULE_PATH="src/app/code/Clostech/Integration"
+MODULE_URL="https://raw.githubusercontent.com/LucianaAG/clostech-magento-installer/master/clostech-module.zip"
 ONBOARDING_URL="https://clostech.ai/onboarding/magento"
 
 #-------------------------------------------------------------------------------
@@ -47,6 +46,25 @@ print_info() {
     echo -e "${BLUE}[INFO]${NC} $1" >&2
 }
 
+detect_magento_structure() {
+    print_info "Detecting Magento directory structure..."
+    
+    # Detectar estructura de directorios
+    if [ -d "src/app/code" ]; then
+        APP_PATH="src/app/code"
+        print_success "Found Docker-style structure (src/app/code)"
+    elif [ -d "app/code" ]; then
+        APP_PATH="app/code"
+        print_success "Found standard structure (app/code)"
+    else
+        print_error "Magento app/code directory not found"
+        print_warning "Make sure you're in Magento root directory"
+        exit 1
+    fi
+    
+    MODULE_PATH="$APP_PATH/Clostech/Integration"
+}
+
 check_magento() {
     print_info "Checking Magento installation..."
     
@@ -63,8 +81,8 @@ check_magento() {
 check_permissions() {
     print_info "Checking permissions..."
     
-    if [ ! -w "src/app/code" ]; then
-        print_error "No write permissions on src/app/code"
+    if [ ! -w "$APP_PATH" ]; then
+        print_error "No write permissions on $APP_PATH"
         print_warning "Run with sudo or check permissions"
         exit 1
     fi
@@ -77,7 +95,7 @@ check_existing_installation() {
     
     if [ -d "$MODULE_PATH" ]; then
         print_warning "Module already installed at $MODULE_PATH"
-        echo -n "Reinstall? This will overwrite existing files. (y/n): "
+        echo -n "Reinstall? This will overwrite existing files. (y/n): " >&2
         read -r choice
         
         if [ "$choice" != "y" ] && [ "$choice" != "Y" ]; then
@@ -122,11 +140,19 @@ download_module() {
     TMP_DIR=$(mktemp -d)
     TMP_FILE="$TMP_DIR/clostech-module.zip"
     
-    # Para testing: copiar desde /tmp en lugar de descargar
-    if [ -f "/tmp/clostech-module.zip" ]; then
-        cp /tmp/clostech-module.zip "$TMP_FILE"
+    # Descargar con curl o wget
+    if command -v curl &> /dev/null; then
+        curl -sL "$MODULE_URL" -o "$TMP_FILE"
+    elif command -v wget &> /dev/null; then
+        wget -q "$MODULE_URL" -O "$TMP_FILE"
     else
-        print_error "File not found: /tmp/clostech-module.zip"
+        print_error "curl or wget required"
+        exit 1
+    fi
+    
+    # Verificar que se descargó
+    if [ ! -f "$TMP_FILE" ]; then
+        print_error "Failed to download module"
         exit 1
     fi
     
@@ -140,11 +166,11 @@ install_module() {
     print_info "Installing module..."
     
     # Crear directorio si no existe
-    mkdir -p "src/app/code/Clostech"
+    mkdir -p "$APP_PATH/Clostech"
     
     # Descomprimir
     if command -v unzip &> /dev/null; then
-        unzip -q "$ZIP_FILE" -d "src/app/code/Clostech/"
+        unzip -q "$ZIP_FILE" -d "$APP_PATH/Clostech/"
     else
         print_error "unzip command not found"
         exit 1
@@ -203,6 +229,7 @@ main() {
     print_header
     
     check_magento
+    detect_magento_structure
     check_permissions
     check_existing_installation
     
